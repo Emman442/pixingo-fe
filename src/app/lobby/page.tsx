@@ -1,17 +1,18 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFirestore, useUser, useDoc } from "@/firebase";
-import { doc, setDoc, updateDoc, onSnapshot, serverTimestamp, collection, getDocs, query, where, limit } from "firebase/firestore";
+import { doc, setDoc, updateDoc, serverTimestamp, collection, getDocs, query, where, limit } from "firebase/firestore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, ShieldCheck, ChevronLeft, Loader2, Users } from "lucide-react";
+import { ChevronLeft, Loader2, Users, AlertCircle } from "lucide-react";
 import { ChatBox } from "@/components/game/ChatBox";
 import Link from "next/link";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function LobbyPage() {
   const router = useRouter();
@@ -22,54 +23,76 @@ export default function LobbyPage() {
 
   const [lobbyId, setLobbyId] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const initializingRef = useRef(false);
 
   // Initialize Lobby
   useEffect(() => {
-    if (!firestore || !user || authLoading) return;
+    if (!firestore || !user || authLoading || initializingRef.current || lobbyId) return;
 
     const findOrCreateLobby = async () => {
-      // For Solo, we just use a private-ish lobby ID or skip the cloud part for now
-      // But let's make it work via Firestore for all modes to show real-time state
-      
-      const lobbiesRef = collection(firestore, "lobbies");
-      const q = query(
-        lobbiesRef, 
-        where("mode", "==", mode), 
-        where("status", "==", "waiting"),
-        limit(1)
-      );
+      initializingRef.current = true;
+      try {
+        const lobbiesRef = collection(firestore, "lobbies");
+        let targetId = "";
 
-      const querySnapshot = await getDocs(q);
-      let targetId = "";
+        if (mode === "solo") {
+          // Solo mode: always create a fresh private lobby
+          const newLobbyRef = doc(lobbiesRef);
+          targetId = newLobbyRef.id;
+          await setDoc(newLobbyRef, {
+            mode,
+            status: "waiting",
+            players: {},
+            createdAt: serverTimestamp(),
+          });
+        } else {
+          // Multiplayer: try to find an existing waiting lobby for this mode
+          // We use a simple query to avoid composite index requirements
+          const q = query(
+            lobbiesRef, 
+            where("mode", "==", mode),
+            limit(10)
+          );
 
-      if (!querySnapshot.empty && mode !== "solo") {
-        targetId = querySnapshot.docs[0].id;
-      } else {
-        const newLobbyRef = doc(lobbiesRef);
-        targetId = newLobbyRef.id;
-        await setDoc(newLobbyRef, {
-          mode,
-          status: "waiting",
-          players: {},
-          createdAt: serverTimestamp(),
-        });
-      }
+          const querySnapshot = await getDocs(q);
+          const existingLobby = querySnapshot.docs.find(d => d.data().status === "waiting");
 
-      setLobbyId(targetId);
-
-      // Join the lobby
-      const lobbyDocRef = doc(firestore, "lobbies", targetId);
-      await updateDoc(lobbyDocRef, {
-        [`players.${user.uid}`]: {
-          name: user.displayName || `Runner_${user.uid.slice(0, 4)}`,
-          photoUrl: user.photoURL || `https://picsum.photos/seed/${user.uid}/200/200`,
-          isReady: false,
+          if (existingLobby) {
+            targetId = existingLobby.id;
+          } else {
+            const newLobbyRef = doc(lobbiesRef);
+            targetId = newLobbyRef.id;
+            await setDoc(newLobbyRef, {
+              mode,
+              status: "waiting",
+              players: {},
+              createdAt: serverTimestamp(),
+            });
+          }
         }
-      });
+
+        setLobbyId(targetId);
+
+        // Join the lobby
+        const lobbyDocRef = doc(firestore, "lobbies", targetId);
+        await updateDoc(lobbyDocRef, {
+          [`players.${user.uid}`]: {
+            name: user.displayName || `Runner_${user.uid.slice(0, 4)}`,
+            photoUrl: user.photoURL || `https://picsum.photos/seed/${user.uid}/200/200`,
+            isReady: false,
+          }
+        });
+      } catch (err: any) {
+        console.error("Lobby initialization error:", err);
+        setError("Failed to initialize arena. Please try again.");
+      } finally {
+        initializingRef.current = false;
+      }
     };
 
     findOrCreateLobby();
-  }, [firestore, user, authLoading, mode]);
+  }, [firestore, user, authLoading, mode, lobbyId]);
 
   // Subscribe to Lobby State
   const lobbyRef = useMemo(() => lobbyId ? doc(firestore!, "lobbies", lobbyId) : null, [firestore, lobbyId]);
@@ -77,7 +100,14 @@ export default function LobbyPage() {
 
   const players = lobby?.players ? Object.entries(lobby.players).map(([uid, data]: [string, any]) => ({ uid, ...data })) : [];
   const myPlayer = players.find(p => p.uid === user?.uid);
-  const allReady = players.length > 0 && players.every(p => p.isReady) && (mode === "solo" || players.length >= 2);
+  
+  // Logic to start the game
+  const canStart = useMemo(() => {
+    if (players.length === 0) return false;
+    const allReady = players.every(p => p.isReady);
+    if (mode === "solo") return allReady;
+    return allReady && players.length >= 2;
+  }, [players, mode]);
 
   // Ready Toggle
   const toggleReady = () => {
@@ -89,9 +119,9 @@ export default function LobbyPage() {
 
   // Countdown Logic
   useEffect(() => {
-    if (allReady && countdown === null) {
+    if (canStart && countdown === null) {
       setCountdown(3);
-    } else if (!allReady) {
+    } else if (!canStart) {
       setCountdown(null);
     }
 
@@ -101,7 +131,22 @@ export default function LobbyPage() {
     } else if (countdown === 0) {
       router.push(`/play?lobbyId=${lobbyId}`);
     }
-  }, [allReady, countdown, router, lobbyId]);
+  }, [canStart, countdown, router, lobbyId]);
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+        <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+          Retry Connection
+        </Button>
+      </div>
+    );
+  }
 
   if (authLoading || !lobbyId) {
     return (
@@ -136,7 +181,7 @@ export default function LobbyPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                className={`glass-card rounded-2xl p-4 flex items-center justify-between border-2 ${player.isReady ? 'border-primary/40' : 'border-white/5'}`}
+                className={`glass-card rounded-2xl p-4 flex items-center justify-between border-2 transition-colors ${player.isReady ? 'border-primary/40 bg-primary/5' : 'border-white/5'}`}
               >
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-12 w-12 border-2 border-primary/20">
@@ -150,7 +195,7 @@ export default function LobbyPage() {
                     </span>
                   </div>
                 </div>
-                <Badge variant={player.isReady ? "default" : "outline"} className={player.isReady ? "bg-primary" : "text-muted-foreground"}>
+                <Badge variant={player.isReady ? "default" : "outline"} className={player.isReady ? "bg-primary text-white" : "text-muted-foreground"}>
                   {player.isReady ? "READY" : "WAITING"}
                 </Badge>
               </motion.div>
