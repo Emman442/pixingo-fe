@@ -1,0 +1,65 @@
+
+{
+  "entities": {
+    "Lobby": {
+      "title": "Lobby",
+      "description": "A game lobby where players wait for a match to start.",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["waiting", "starting", "active"],
+          "description": "Current status of the lobby."
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["solo", "duel", "royale"],
+          "description": "The game mode for this lobby."
+        },
+        "players": {
+          "type": "object",
+          "description": "A map of player UIDs to their status (name, isReady, photoUrl)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["status", "mode", "players", "createdAt"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "A message sent in the lobby chat.",
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "senderId": {
+          "type": "string"
+        },
+        "senderName": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["text", "senderId", "senderName", "timestamp"]
+    }
+  },
+  "auth": {
+    "providers": ["anonymous", "google.com"]
+  },
+  "firestore": {
+    "/lobbies/{lobbyId}": {
+      "schema": "Lobby",
+      "description": "Collection of active game lobbies."
+    },
+    "/lobbies/{lobbyId}/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Messages for a specific lobby's chat."
+    }
+  }
+}
