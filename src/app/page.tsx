@@ -2,12 +2,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Trophy, Users, Zap, Gamepad2 } from "lucide-react";
+import { Trophy, Users, Zap, Gamepad2, Info, ListOrdered } from "lucide-react";
 import { GameModeCard } from "@/components/game/GameModeCard";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col px-6 py-12 max-w-md mx-auto space-y-12">
+    <div className="min-h-screen flex flex-col px-6 py-12 max-w-md mx-auto space-y-12 pb-24">
       <header className="text-center space-y-4">
         <motion.div
           initial={{ y: -20, opacity: 0 }}
@@ -15,7 +17,7 @@ export default function Home() {
           className="inline-flex items-center space-x-2 bg-primary/10 border border-primary/20 px-3 py-1 rounded-full text-primary text-xs font-medium uppercase tracking-widest"
         >
           <Gamepad2 size={14} />
-          <span>Arena v1.0.4</span>
+          <span>Arena v1.1.0</span>
         </motion.div>
         
         <motion.h1
@@ -36,6 +38,21 @@ export default function Home() {
         </motion.p>
       </header>
 
+      <div className="flex gap-3">
+        <Link href="/how-to-play" className="flex-1">
+          <Button variant="outline" className="w-full h-12 rounded-xl border-white/10 hover:bg-white/5 font-headline uppercase tracking-wider text-[10px]">
+            <Info size={14} className="mr-2" />
+            How to Play
+          </Button>
+        </Link>
+        <Link href="/leaderboard" className="flex-1">
+          <Button variant="outline" className="w-full h-12 rounded-xl border-white/10 hover:bg-white/5 font-headline uppercase tracking-wider text-[10px]">
+            <ListOrdered size={14} className="mr-2" />
+            Leaderboard
+          </Button>
+        </Link>
+      </div>
+
       <div className="space-y-6">
         <GameModeCard
           title="Solo Arena"
@@ -49,7 +66,7 @@ export default function Home() {
         
         <GameModeCard
           title="Duel Arena"
-          description="Challenge another player and compete for GEN rewards."
+          description="Challenge another player and compete for rewards."
           features={["1v1 gameplay", "Winner takes the pot", "AI-verified results"]}
           cta="Find Opponent"
           href="/lobby?mode=duel"

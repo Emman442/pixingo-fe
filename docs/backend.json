@@ -47,6 +47,19 @@
         }
       },
       "required": ["text", "senderId", "senderName", "timestamp"]
+    },
+    "LeaderboardEntry": {
+      "title": "LeaderboardEntry",
+      "description": "A high score entry for a player.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "score": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "score", "timestamp"]
     }
   },
   "auth": {
@@ -60,6 +73,10 @@
     "/lobbies/{lobbyId}/messages/{messageId}": {
       "schema": "ChatMessage",
       "description": "Messages for a specific lobby's chat."
+    },
+    "/leaderboard/{userId}": {
+      "schema": "LeaderboardEntry",
+      "description": "Global high scores per user."
     }
   }
 }
