@@ -44,9 +44,9 @@ export default function HowToPlayPage() {
       </header>
 
       <section className="space-y-4">
-        <h2 className="text-4xl font-headline font-bold tracking-tight">The VisionQuest <span className="text-primary">Protocol</span></h2>
+        <h2 className="text-4xl font-headline font-bold tracking-tight">The Pixingo <span className="text-primary">Protocol</span></h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          VisionQuest is not a trivia game. It is a semantic synchronization challenge where humans and AI reach consensus on conceptual relationships.
+          Pixingo is not a trivia game. It is a semantic synchronization challenge where humans and AI reach consensus on conceptual relationships.
         </p>
       </section>
 

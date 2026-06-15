@@ -42,7 +42,7 @@ export default function PlayPage() {
         setAnswer("");
         setIsSubmitting(false);
       } else {
-        localStorage.setItem('visionquest_answers', JSON.stringify(newAnswers));
+        localStorage.setItem('pixingo_answers', JSON.stringify(newAnswers));
         router.push("/consensus");
       }
     }, 1500);
@@ -127,7 +127,7 @@ export default function PlayPage() {
 
       <footer className="text-center">
         <p className="text-[10px] text-muted-foreground/30 uppercase tracking-widest font-medium">
-          VisionQuest Semantic Verification Active
+          Pixingo Semantic Verification Active
         </p>
       </footer>
     </div>
