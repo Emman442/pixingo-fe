@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useFirestore, useCollection, useUser } from "@/firebase";
+
 import { collection, addDoc, serverTimestamp, query, orderBy, limit } from "firebase/firestore";
 import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,18 +15,12 @@ interface ChatBoxProps {
 }
 
 export function ChatBox({ lobbyId }: ChatBoxProps) {
-  const firestore = useFirestore();
-  const { user } = useUser();
+
   const [inputText, setInputText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const messagesQuery = lobbyId ? query(
-    collection(firestore!, "lobbies", lobbyId, "messages"),
-    orderBy("timestamp", "asc"),
-    limit(50)
-  ) : null;
 
-  const { data: messages } = useCollection(messagesQuery);
+  const messages = [{ text: "Welcome to the arena!", senderId: "system", senderName: "System" }];
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -36,16 +30,9 @@ export function ChatBox({ lobbyId }: ChatBoxProps) {
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim() || !user || !firestore) return;
+    if (!inputText.trim()) return;
 
-    const messageData = {
-      text: inputText,
-      senderId: user.uid,
-      senderName: user.displayName || `Runner_${user.uid.slice(0, 4)}`,
-      timestamp: serverTimestamp(),
-    };
-
-    addDoc(collection(firestore, "lobbies", lobbyId, "messages"), messageData);
+  
     setInputText("");
   };
 
@@ -63,18 +50,18 @@ export function ChatBox({ lobbyId }: ChatBoxProps) {
                 key={msg.id}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                className={`flex flex-col ${msg.senderId === user?.uid ? 'items-end' : 'items-start'}`}
+                // className={`flex flex-col ${msg.senderId === user?.uid ? 'items-end' : 'items-start'}`}
               >
                 <span className="text-[8px] text-muted-foreground mb-1 uppercase tracking-tighter">
                   {msg.senderName}
                 </span>
-                <div className={`px-3 py-1.5 rounded-2xl text-xs max-w-[80%] ${
+                {/* <div className={`px-3 py-1.5 rounded-2xl text-xs max-w-[80%] ${
                   msg.senderId === user?.uid 
                     ? 'bg-primary text-white rounded-tr-none' 
                     : 'bg-white/5 text-foreground rounded-tl-none border border-white/5'
                 }`}>
                   {msg.text}
-                </div>
+                </div> */}
               </motion.div>
             ))}
           </AnimatePresence>

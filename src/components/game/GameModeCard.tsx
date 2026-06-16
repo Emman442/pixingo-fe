@@ -15,6 +15,7 @@ interface GameModeCardProps {
   href: string;
   icon: LucideIcon;
   variant: "primary" | "secondary" | "accent";
+  disabled?: boolean;
 }
 
 export const GameModeCard = ({
@@ -25,6 +26,7 @@ export const GameModeCard = ({
   href,
   icon: Icon,
   variant,
+  disabled,
 }: GameModeCardProps) => {
   const colors = {
     primary: "from-primary/20 via-primary/5 to-transparent border-primary/30",
@@ -37,6 +39,11 @@ export const GameModeCard = ({
     secondary: "bg-secondary hover:bg-secondary/90",
     accent: "bg-accent hover:bg-accent/90 text-background",
   }[variant];
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (disabled) return;     // ← Add this at the top
+    // ... rest of your code
+  };
 
   return (
     <motion.div
@@ -52,7 +59,7 @@ export const GameModeCard = ({
             </div>
             <h3 className="text-2xl font-headline tracking-tight">{title}</h3>
           </div>
-          
+
           <p className="text-muted-foreground text-sm leading-relaxed">
             {description}
           </p>
@@ -67,7 +74,17 @@ export const GameModeCard = ({
           </ul>
 
           <Link href={href} className="pt-4">
-            <Button className={`w-full font-headline uppercase tracking-wider py-6 ${buttonVariant}`}>
+            {/* <Button className={`w-full font-headline uppercase tracking-wider py-6 ${buttonVariant}`} disabled={disabled} onClick={disabled ? undefined : handleClick} >
+              {cta}
+            </Button> */}
+            <Button
+              className={`w-full font-headline uppercase tracking-wider py-6 ${buttonVariant} 
+    ${disabled
+                  ? 'opacity-50 cursor-not-allowed pointer-events-none'
+                  : 'hover:opacity-90 active:scale-[0.98]'}`}
+              disabled={disabled}
+              onClick={disabled ? undefined : handleClick}
+            >
               {cta}
             </Button>
           </Link>

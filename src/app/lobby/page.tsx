@@ -4,8 +4,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { useFirestore, useUser, useDoc } from "@/firebase";
-import { doc, setDoc, updateDoc, serverTimestamp, collection, getDocs, query, where, limit } from "firebase/firestore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,9 +16,6 @@ export default function LobbyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode") || "solo";
-  const { user, loading: authLoading } = useUser();
-  const firestore = useFirestore();
-
   const [lobbyId, setLobbyId] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,61 +23,56 @@ export default function LobbyPage() {
 
   // Initialize Lobby
   useEffect(() => {
-    if (!firestore || !user || authLoading || initializingRef.current || lobbyId) return;
+
 
     const findOrCreateLobby = async () => {
       initializingRef.current = true;
       try {
-        const lobbiesRef = collection(firestore, "lobbies");
+        // const lobbiesRef = collection(firestore, "lobbies");
         let targetId = "";
 
         if (mode === "solo") {
           // Solo mode: always create a fresh private lobby
           const newLobbyRef = doc(lobbiesRef);
-          targetId = newLobbyRef.id;
-          await setDoc(newLobbyRef, {
-            mode,
-            status: "waiting",
-            players: {},
-            createdAt: serverTimestamp(),
-          });
+          // targetId = newLobbyRef.id;
+          // await setDoc(newLobbyRef, {
+          //   mode,
+          //   status: "waiting",
+          //   players: {},
+          //   createdAt: serverTimestamp(),
+          // });
         } else {
           // Multiplayer: try to find an existing waiting lobby for this mode
           // We use a simple query to avoid composite index requirements
-          const q = query(
-            lobbiesRef, 
-            where("mode", "==", mode),
-            limit(10)
-          );
+       
 
-          const querySnapshot = await getDocs(q);
-          const existingLobby = querySnapshot.docs.find(d => d.data().status === "waiting");
 
-          if (existingLobby) {
-            targetId = existingLobby.id;
-          } else {
-            const newLobbyRef = doc(lobbiesRef);
-            targetId = newLobbyRef.id;
-            await setDoc(newLobbyRef, {
-              mode,
-              status: "waiting",
-              players: {},
-              createdAt: serverTimestamp(),
-            });
-          }
+
+          // if (existingLobby) {
+          //   targetId = existingLobby.id;
+          // } else {
+          //   const newLobbyRef = doc(lobbiesRef);
+          //   targetId = newLobbyRef.id;
+          //   await setDoc(newLobbyRef, {
+          //     mode,
+          //     status: "waiting",
+          //     players: {},
+          //     createdAt: serverTimestamp(),
+          //   });
+          // }
         }
 
         setLobbyId(targetId);
 
         // Join the lobby
         const lobbyDocRef = doc(firestore, "lobbies", targetId);
-        await updateDoc(lobbyDocRef, {
-          [`players.${user.uid}`]: {
-            name: user.displayName || `Runner_${user.uid.slice(0, 4)}`,
-            photoUrl: user.photoURL || `https://picsum.photos/seed/${user.uid}/200/200`,
-            isReady: false,
-          }
-        });
+        // await updateDoc(lobbyDocRef, {
+        //   [`players.${user.uid}`]: {
+        //     name: user.displayName || `Runner_${user.uid.slice(0, 4)}`,
+        //     photoUrl: user.photoURL || `https://picsum.photos/seed/${user.uid}/200/200`,
+        //     isReady: false,
+        //   }
+        // });
       } catch (err: any) {
         console.error("Lobby initialization error:", err);
         setError("Failed to initialize arena. Please try again.");
@@ -92,11 +82,11 @@ export default function LobbyPage() {
     };
 
     findOrCreateLobby();
-  }, [firestore, user, authLoading, mode, lobbyId]);
+  }, [ mode, lobbyId]);
 
   // Subscribe to Lobby State
   const lobbyRef = useMemo(() => lobbyId ? doc(firestore!, "lobbies", lobbyId) : null, [firestore, lobbyId]);
-  const { data: lobby } = useDoc(lobbyRef);
+
 
   const players = lobby?.players ? Object.entries(lobby.players).map(([uid, data]: [string, any]) => ({ uid, ...data })) : [];
   const myPlayer = players.find(p => p.uid === user?.uid);
@@ -111,7 +101,7 @@ export default function LobbyPage() {
 
   // Ready Toggle
   const toggleReady = () => {
-    if (!lobbyId || !user || !firestore) return;
+    if (!lobbyId) return;
     updateDoc(doc(firestore, "lobbies", lobbyId), {
       [`players.${user.uid}.isReady`]: !myPlayer?.isReady
     });
@@ -191,7 +181,7 @@ export default function LobbyPage() {
                   <div>
                     <h4 className="font-headline font-bold text-sm">{player.name}</h4>
                     <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                      {player.uid === user?.uid ? "You" : "Opponent"}
+                      {/* {player.uid === user?.uid ? "You" : "Opponent"} */}
                     </span>
                   </div>
                 </div>

@@ -4,7 +4,7 @@ import { studionet } from "genlayer-js/chains";
 
 import { TransactionStatus } from "genlayer-js/types"
 import { parseEther } from "viem";
-import { UserProfile } from "./types";
+import { Puzzle, UserProfile } from "./types";
 
 
 /**
@@ -59,7 +59,7 @@ class Pixingo {
         try {
             const profile_exists: any = await this.client.readContract({
                 address: this.contractAddress,
-                functionName: "creator_exists",
+                functionName: "player_exists",
                 args: [account_address],
             });
 
@@ -92,6 +92,23 @@ class Pixingo {
         }
     }
 
+    async getPuzzles(): Promise<Puzzle[]
+    > {
+        try {
+            const puzzles: any = await this.client.readContract({
+                address: this.contractAddress,
+                functionName: "get_all_puzzles",
+            });
+
+
+            return puzzles as Puzzle[];
+
+        } catch (error) {
+            console.error("Error fetching puzzles: ", error);
+            throw new Error("Failed to fetch puzzles");
+        }
+    }
+
 
 
 
@@ -101,7 +118,7 @@ class Pixingo {
         try {
             const txHash = await this.client.writeContract({
                 address: this.contractAddress,
-                functionName: "register_creator",
+                functionName: "register_player",
                 args: [username],
                 value: BigInt(0),
             });
@@ -120,22 +137,23 @@ class Pixingo {
     }
 
 
-    async createChallenge(
-        prompt: string,
-        founder_name: string,
-        project_name: string,
-        prize_pool: number,
-        duration_seconds: number,
-        created_at: string
+    async addPuzzle(
+        image_1: string,
+        image_2: string,
+        image_3: string,
+        image_4: string,
+        theme: string,
+        difficulty: string,
+        answer_hint: string,
     ) {
 
         await this.client.connect("studionet");
         try {
             const txHash = await this.client.writeContract({
                 address: this.contractAddress,
-                functionName: "create_challenge",
-                args: [prompt, founder_name, project_name, prize_pool, duration_seconds, created_at],
-                value: parseEther(prize_pool.toString()),
+                functionName: "add_puzzle",
+                args: [image_1, image_2, image_3, image_4, theme, difficulty, answer_hint],
+                value: BigInt(0),
             });
 
             const receipt = await this.client.waitForTransactionReceipt({
@@ -145,8 +163,33 @@ class Pixingo {
 
             return receipt as TransactionReceipt;
         } catch (error) {
-            console.error("Error creating challenge:", error);
-            throw new Error("Failed to create challenge");
+            console.error("Error adding Puzzle:", error);
+            throw new Error("Failed to add puzzle");
+        }
+    }
+
+    async startSoloGame(
+        puzzle_ids: [string]
+    ) {
+
+        await this.client.connect("studionet");
+        try {
+            const txHash = await this.client.writeContract({
+                address: this.contractAddress,
+                functionName: "start_solo_game",
+                args: [puzzle_ids],
+                value: BigInt(0)
+            });
+
+            const receipt = await this.client.waitForTransactionReceipt({
+                hash: txHash,
+                status: TransactionStatus.ACCEPTED,
+            });
+
+            return receipt as TransactionReceipt;
+        } catch (error) {
+            console.error("Error starting Solo game:", error);
+            throw new Error("Failed to start solo game");
         }
     }
 
