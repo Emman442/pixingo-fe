@@ -5,8 +5,30 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Trophy, Star, TrendingUp, RotateCcw } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import SoloResult from "@/components/ui/soloResult";
+import { useFetchSoloGame } from "@/hooks/Pixingo";
 
 export default function ResultsPage() {
+  const params = useSearchParams()
+  const mode = params.get("mode");
+  const isSolo = mode === "solo";
+  const gameId = params.get("gameId");
+
+
+  const { isPending: isFetchingSoloGame, data: game } = useFetchSoloGame(gameId!)
+
+  console.log("gameeeId: ", gameId)
+  console.log("gameee: ", game, gameId)
+
+  if (isSolo) {
+    return (
+      <SoloResult
+        game={game}
+        isLoading={isFetchingSoloGame}
+      />
+    );
+  }
   return (
     <div className="min-h-screen p-6 flex flex-col items-center space-y-12 bg-[radial-gradient(ellipse_at_top,_rgba(157,80,255,0.15)_0%,_transparent_80%)]">
       <header className="text-center pt-8">
@@ -45,7 +67,7 @@ export default function ResultsPage() {
           <div className="w-8 h-8 rounded-full bg-slate-400/20 flex items-center justify-center text-slate-400 text-xs font-bold">2</div>
           <div className="text-[8px] uppercase tracking-tighter text-muted-foreground">ShadowRider</div>
         </motion.div>
-        
+
         <motion.div
           initial={{ height: 0 }}
           animate={{ height: "200px" }}
@@ -99,7 +121,7 @@ export default function ResultsPage() {
             <div className="text-xl font-headline font-bold text-primary">+850</div>
           </div>
         </div>
-        
+
         <div className="pt-4 border-t border-white/5 space-y-4">
           <div className="flex justify-between items-center text-xs">
             <span className="text-muted-foreground">Global Rank Change</span>

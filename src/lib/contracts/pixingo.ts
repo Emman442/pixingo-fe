@@ -4,7 +4,7 @@ import { studionet } from "genlayer-js/chains";
 
 import { TransactionStatus } from "genlayer-js/types"
 import { parseEther } from "viem";
-import { Puzzle, UserProfile } from "./types";
+import { Puzzle, SoloGame, UserProfile } from "./types";
 
 
 /**
@@ -109,6 +109,23 @@ class Pixingo {
         }
     }
 
+    async getSoloGame(gameId: string): Promise<SoloGame> {
+        try {
+            const game: any = await this.client.readContract({
+                address: this.contractAddress,
+                functionName: "get_solo_game",
+                args: [gameId]
+            });
+
+
+            return game as SoloGame;
+
+        } catch (error) {
+            console.error("Error fetching solo game: ", error);
+            throw new Error("Failed to fetch solo game");
+        }
+    }
+
 
 
 
@@ -193,81 +210,37 @@ class Pixingo {
         }
     }
 
-
-
-
-
-
-
-    async settleConsensusBet(
-        bet_id: string,
+    async submitSoloGame(
+        game_id: string,
+        answers: [string],
+        time_taken_list: [number]
     ) {
+
         await this.client.connect("studionet");
         try {
             const txHash = await this.client.writeContract({
                 address: this.contractAddress,
-                functionName: "settle_consensus_bet",
-                args: [bet_id],
-                value: BigInt(0),
-            });
-
-            const receipt = await this.client.waitForTransactionReceipt({
-                hash: txHash,
-                status: TransactionStatus.ACCEPTED,
-                retries: 60,
-                interval: 5000,
-            });
-            console.log("Receopttt", receipt)
-            return receipt as TransactionReceipt;
-        } catch (error) {
-            console.error("Error creating consensus bet:", error);
-            throw new Error("Failed to create consensus bet");
-        }
-    }
-
-
-
-    async submitRoast(challenge_id: string, roast_content: string) {
-        await this.client.connect("studionet");
-        try {
-            const txHash = await this.client.writeContract({
-                address: this.contractAddress,
-                functionName: "submit_roast",
-                args: [challenge_id, roast_content],
-                value: BigInt(0),
-            });
-            const receipt = await this.client.waitForTransactionReceipt({
-                hash: txHash,
-                status: TransactionStatus.ACCEPTED,
-            });
-            return receipt as TransactionReceipt;
-        } catch (error) {
-            console.error("Error submitting roast:", error);
-            throw new Error("Failed to submit roast");
-        }
-    }
-
-    async judgeChallenge(challenge_id: string) {
-        await this.client.connect("studionet");
-        try {
-            const txHash = await this.client.writeContract({
-                address: this.contractAddress,
-                functionName: "judge_challenge",
-                args: [challenge_id],
-                value: BigInt(0),
+                functionName: "submit_solo_game",
+                args: [game_id, answers, time_taken_list],
+                value: BigInt(0)
             });
 
             const receipt = await this.client.waitForTransactionReceipt({
                 hash: txHash,
                 status: TransactionStatus.ACCEPTED,
             });
-            return receipt as TransactionReceipt;
 
+            return receipt as TransactionReceipt;
         } catch (error) {
-            console.error("Error judging challenge:", error);
-            throw new Error("Failed to judge challenge");
+            console.error("Error submitting game details: ", error);
+            throw new Error("Failed to record your game details");
         }
     }
+
+
+
+
+
 
 
 }

@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import TruthDuel from "@/lib/contracts/pixingo"
 import { getContractAddress } from "@/lib/genlayer/client";
-import type { Puzzle, UserProfile } from "@/lib/contracts/types";
+import type { Puzzle, SoloGame, UserProfile } from "@/lib/contracts/types";
 import { toast } from "sonner";
 import { useWallets } from "@privy-io/react-auth";
 
@@ -70,6 +70,20 @@ export function useFetchPuzzles() {
 }
 
 
+export function useFetchSoloGame(gameId: string) {
+    const contract = usePixingoContract();
+
+    return useQuery<SoloGame, Error>({
+        queryKey: ["solo_game"],
+        queryFn: () => {
+            if (!contract) {
+                throw new Error("Contract not initialized");
+            }
+            return contract.getSoloGame(gameId);
+        },
+        enabled: !!contract,
+    });
+}
 
 
 export function useCreateProfile() {
@@ -103,7 +117,6 @@ export function useCreateProfile() {
         },
     });
 }
-
 
 
 export function useAddPuzzle() {
@@ -178,6 +191,42 @@ export function useStartSoloGame() {
         onError: async (error) => {
             console.error("Error starting game:", error);
             toast.error("Failed to start game. Please try again.");
+        }
+    });
+}
+
+export function useSubmitSoloGame() {
+    const contract = usePixingoContract();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({
+            game_id,
+            answers,
+            time_taken_list
+        }: {
+            game_id: string,
+            answers: [string],
+            time_taken_list: [number]
+        }) => {
+            if (!contract) {
+                throw new Error("Contract not initialized");
+            }
+
+            const receipt = await contract.submitSoloGame(game_id, answers, time_taken_list);
+            console.log("Submit game details tx receipt:", receipt);
+            console.log("FULL RECEIPT", JSON.stringify(receipt, null, 2));
+            return receipt;
+        },
+
+        onSuccess: async (_, variables) => {
+            await queryClient.invalidateQueries({
+                queryKey: ["solo_game"],
+            });
+        },
+        onError: async (error) => {
+            console.error("Error submitting game details:", error);
+            toast.error("Failed to record game details. Please try again.");
         }
     });
 }

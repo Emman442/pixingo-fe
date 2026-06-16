@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Timer, CheckCircle2, Zap, Brain, ShieldCheck, ChevronRight, Loader2 } from "lucide-react";
 // import { MATCH_ROUNDS } from "@/app/lib/game-data";
-import { useFetchPuzzles, useStartSoloGame } from "@/hooks/Pixingo";
+import { useFetchPuzzles, useStartSoloGame, useSubmitSoloGame } from "@/hooks/Pixingo";
 import toast from "@/lib/utils/toast";
 
 type GameState = 'intro' | 'playing' | 'summary' | 'signing';
@@ -22,10 +22,10 @@ export default function SoloPage() {
   const [timeLeft, setTimeLeft] = useState(30);
   const [answer, setAnswer] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [answers, setAnswers] = useState<string[]>([]);
+  // const [answers, setAnswers] = useState<string[]>([]);
   const { isPending: isFetchingPuzzles, data: puzzles } = useFetchPuzzles()
   const { isPending: isStartingGame, mutate: StartGame } = useStartSoloGame()
-  console.log("puzzles: ", puzzles)
+  const { isPending: isSubmittingGame, mutate: SubmitGame } = useSubmitSoloGame()
   // Timer Effect
   useEffect(() => {
     if (gameState !== 'playing') return;
@@ -47,13 +47,26 @@ export default function SoloPage() {
     );
     StartGame({ puzzle_ids: puzzleIds }, {
       onSuccess: (data) => {
-        console.log("Dataaa", data?.result?.payload)
-        console.log(data?.calldata?.result?.payload)
-        console.log(data?.result)
-  
+        const gameId = data?.consensus_data?.leader_receipt?.[0]?.result?.payload?.readable?.replace(/"/g, "")
+        const gameData = {
+          gameId,
+          currentRound: 1,
+          totalRounds: puzzleIds.length,
+          puzzleIds,
+          score: 0,
+          roundResults: [],
+          startedAt: Date.now(),
+        };
+
+        localStorage.setItem(
+          "pixingo_game",
+          JSON.stringify(gameData)
+        );
+
+        setGameState("playing");
+        setTimeLeft(30);
+
         toast.success("Game Started Successfully!")
-        // setGameState('playing');
-        // setTimeLeft(30);
       },
       onError: () => {
         toast.error("Failed to start game. Please try again.");
@@ -61,38 +74,93 @@ export default function SoloPage() {
     })
   };
 
+
   const handleNextRound = (submittedAnswer: string) => {
-    const newAnswers = [...answers, submittedAnswer];
-    setAnswers(newAnswers);
+    const game = JSON.parse(
+      localStorage.getItem("pixingo_game")!
+    );
+
+    game.roundResults.push({
+      round: currentRound + 1,
+      puzzleId: game.puzzleIds[currentRound],
+      answer: submittedAnswer,
+      timeUsed: 30 - timeLeft,
+    });
+
+    game.currentRound += 1;
+
+    localStorage.setItem(
+      "pixingo_game",
+      JSON.stringify(game)
+    );
+
     setIsSubmitting(true);
 
     setTimeout(() => {
-      if (currentRound < game.puzzles.length - 1) {
+      if (currentRound < game.totalRounds - 1) {
         setCurrentRound(currentRound + 1);
         setTimeLeft(30);
         setAnswer("");
         setIsSubmitting(false);
       } else {
-        localStorage.setItem('pixingo_answers', JSON.stringify(newAnswers));
-        setGameState('summary');
+        setGameState("summary");
         setIsSubmitting(false);
       }
     }, 1200);
-  };
-
-  const handleInitiateConsensus = () => {
-    setGameState('signing');
-    setTimeout(() => {
-      router.push("/consensus");
-    }, 2000);
   };
 
   const game = JSON.parse(
     localStorage.getItem("pixingo_game") || "{}"
   );
 
-  // const round = game.puzzles[currentRound];
-  const round=2
+  const progressValue =
+    ((currentRound + 1) / game.totalRounds) * 100;
+
+
+  const currentPuzzleId =
+    game?.puzzleIds?.[currentRound];
+
+  const currentPuzzle = puzzles?.find(
+    (p) => p.puzzle_id === currentPuzzleId
+  );
+
+  const answers = game?.roundResults.map(
+    (r: any) => r.answer
+  );
+
+  const times = game?.roundResults.map(
+    (r: any) => r.timeUsed
+  );
+
+
+  const images = [
+    currentPuzzle?.image_1,
+    currentPuzzle?.image_2,
+    currentPuzzle?.image_3,
+    currentPuzzle?.image_4,
+  ].filter(Boolean) as string[];
+
+
+  console.log("Gamee: ", game)
+
+  const handleSubmitGame = () => {
+    if (answers.length !== game.totalRounds) {
+      toast.error("Some rounds are missing");
+      return;
+    }
+    setGameState('signing');
+    SubmitGame({ game_id: game.gameId, answers: answers, time_taken_list: times }, {
+      onSuccess: () => {
+        toast.success("Game Datas Submitted Successfully");
+        router.push(`/results?gameId=${game.gameId}&mode=solo`);
+      },
+      onError: () => {
+        setGameState("summary");
+        toast.error("Failed to Submit Game Details")
+      }
+    })
+  };
+
 
   return (
     <div className="min-h-screen flex flex-col p-6 max-w-md mx-auto bg-background">
@@ -138,9 +206,11 @@ export default function SoloPage() {
 
             <Button
               onClick={handleStartRun}
+              disabled={isStartingGame}
               className="w-full py-8 text-xl font-headline uppercase tracking-[0.3em] rounded-2xl bg-primary hover:bg-primary/90 shadow-[0_10px_40px_rgba(157,80,255,0.3)]"
             >
-              Start Run
+              {!isStartingGame
+                ? "Start Run" : "Starting Run..."}
             </Button>
           </motion.div>
         )}
@@ -175,7 +245,7 @@ export default function SoloPage() {
                   exit={{ x: -20, opacity: 0 }}
                   className="space-y-8"
                 >
-                  <PuzzleGrid images={round?.images} />
+                  <PuzzleGrid images={images} />
 
                   <div className="space-y-4">
                     <div className="relative">
@@ -221,21 +291,22 @@ export default function SoloPage() {
               <p className="text-muted-foreground text-xs uppercase tracking-widest">Verify answers on-chain</p>
             </div>
 
-            <div className="space-y-3">
+            {/* <div className="space-y-3">
               {answers.map((ans, i) => (
                 <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
                   <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Round {i + 1}</span>
                   <span className="text-sm font-headline font-medium text-white">{ans || "(Skipped)"}</span>
                 </div>
               ))}
-            </div>
+            </div> */}
 
             <div className="pt-4 space-y-3">
               <Button
-                onClick={handleInitiateConsensus}
+                onClick={handleSubmitGame}
+                disabled={isSubmittingGame}
                 className="w-full py-8 text-lg font-headline uppercase tracking-widest rounded-2xl bg-accent text-background hover:bg-accent/90"
               >
-                Initiate Consensus
+                {!isSubmittingGame ? "Get Game Results" : "Getting Game Results"}
               </Button>
               <Button
                 variant="ghost"
