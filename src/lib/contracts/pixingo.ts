@@ -171,6 +171,7 @@ class Pixingo {
                 functionName: "add_puzzle",
                 args: [image_1, image_2, image_3, image_4, theme, difficulty, answer_hint],
                 value: BigInt(0),
+
             });
 
             const receipt = await this.client.waitForTransactionReceipt({
@@ -228,6 +229,8 @@ class Pixingo {
             const receipt = await this.client.waitForTransactionReceipt({
                 hash: txHash,
                 status: TransactionStatus.ACCEPTED,
+                retries: 60,
+                interval: 5000
             });
 
             return receipt as TransactionReceipt;

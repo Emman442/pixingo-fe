@@ -12,6 +12,7 @@ import { Timer, CheckCircle2, Zap, Brain, ShieldCheck, ChevronRight, Loader2 } f
 // import { MATCH_ROUNDS } from "@/app/lib/game-data";
 import { useFetchPuzzles, useStartSoloGame, useSubmitSoloGame } from "@/hooks/Pixingo";
 import toast from "@/lib/utils/toast";
+import { CircleLoader } from "react-spinners";
 
 type GameState = 'intro' | 'playing' | 'summary' | 'signing';
 
@@ -26,6 +27,7 @@ export default function SoloPage() {
   const { isPending: isFetchingPuzzles, data: puzzles } = useFetchPuzzles()
   const { isPending: isStartingGame, mutate: StartGame } = useStartSoloGame()
   const { isPending: isSubmittingGame, mutate: SubmitGame } = useSubmitSoloGame()
+  const [game, setGame] = useState<any>(null);
   // Timer Effect
   useEffect(() => {
     if (gameState !== 'playing') return;
@@ -38,6 +40,22 @@ export default function SoloPage() {
     }
   }, [timeLeft, gameState]);
 
+  useEffect(() => {
+    const storedGame = localStorage.getItem("pixingo_game");
+
+    if (storedGame) {
+      setGame(JSON.parse(storedGame));
+    }
+  }, []);
+
+  if (!game) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <CircleLoader size={40} color="#BC17FD" />
+      </div>
+    );
+  }
+
   const handleStartRun = () => {
     const shuffled = [...puzzles || []].sort(() => Math.random() - 0.5);
     const selectedPuzzles = shuffled.slice(0, 4);
@@ -48,6 +66,7 @@ export default function SoloPage() {
     StartGame({ puzzle_ids: puzzleIds }, {
       onSuccess: (data) => {
         const gameId = data?.consensus_data?.leader_receipt?.[0]?.result?.payload?.readable?.replace(/"/g, "")
+        console.log("gameId: ", gameId)
         const gameData = {
           gameId,
           currentRound: 1,
@@ -62,7 +81,7 @@ export default function SoloPage() {
           "pixingo_game",
           JSON.stringify(gameData)
         );
-
+        setGame(gameData);
         setGameState("playing");
         setTimeLeft(30);
 
@@ -93,7 +112,7 @@ export default function SoloPage() {
       "pixingo_game",
       JSON.stringify(game)
     );
-
+    setGame(game);
     setIsSubmitting(true);
 
     setTimeout(() => {
@@ -108,10 +127,6 @@ export default function SoloPage() {
       }
     }, 1200);
   };
-
-  const game = JSON.parse(
-    localStorage.getItem("pixingo_game") || "{}"
-  );
 
   const progressValue =
     ((currentRound + 1) / game.totalRounds) * 100;
@@ -326,14 +341,13 @@ export default function SoloPage() {
             animate={{ opacity: 1 }}
             className="flex-1 flex flex-col items-center justify-center space-y-6"
           >
-            <div className="relative">
-              <Loader2 size={64} className="text-primary animate-spin" />
-              <ShieldCheck size={24} className="absolute inset-0 m-auto text-primary" />
+            <div className="">
+              <CircleLoader size={40} color="#BC17FD" />
             </div>
             <div className="text-center space-y-2">
-              <h3 className="font-headline font-bold text-xl uppercase tracking-widest">Signing Transaction</h3>
+              <h3 className="font-headline font-bold text-xl uppercase tracking-widest">FETCHING RESULTS</h3>
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest animate-pulse">
-                Generating cryptographic proof of semantic alignment...
+                Please wait while we fetch your results from genlayer...
               </p>
             </div>
           </motion.div>

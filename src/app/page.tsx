@@ -70,6 +70,7 @@ export default function Home() {
           href="/solo"
           icon={Zap}
           variant="primary"
+          
         />
         
         <GameModeCard
@@ -80,6 +81,7 @@ export default function Home() {
           href="/duel"
           icon={Users}
           variant="secondary"
+          disabled={true}
         />
         
         <GameModeCard
@@ -90,6 +92,7 @@ export default function Home() {
           href="/royale"
           icon={Trophy}
           variant="accent"
+          disabled={true}
         />
       </div>
 

@@ -102,7 +102,7 @@ export default function SoloResult({ game, isLoading }: { game: GameProps, isLoa
                     </div>
 
                     <div className="inline-flex items-center px-5 py-2 rounded-full border border-primary/30 bg-primary/10">
-                      
+
                         <span className="font-bold uppercase tracking-widest text-sm">
                             Solo Game
                         </span>
@@ -174,9 +174,15 @@ export default function SoloResult({ game, isLoading }: { game: GameProps, isLoa
                                     </div>
 
                                     <div className="text-right">
-                                        <div className="text-green-400 font-black flex items-center gap-2 justify-end">
+                                        <div
+                                            className={`${round.ai_verdict === "partial" ||
+                                                    round.ai_verdict === "correct"
+                                                    ? "text-green-400"
+                                                    : "text-red-400"
+                                                } font-black flex items-center gap-2 justify-end`}
+                                        >
                                             <CheckCircle2 className="h-4 w-4" />
-                                            Correct
+                                            {round.ai_verdict}
                                         </div>
 
                                         <div className="text-3xl font-black text-primary">
