@@ -2,22 +2,21 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useFirestore, useCollection } from "@/firebase";
-import { collection, query, orderBy, limit } from "firebase/firestore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Trophy, ChevronLeft, Medal, Star } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function LeaderboardPage() {
-  const firestore = useFirestore();
-  const scoresQuery = firestore ? query(
-    collection(firestore, "leaderboard"),
-    orderBy("score", "desc"),
-    limit(20)
-  ) : null;
 
-  const { data: entries, loading } = useCollection(scoresQuery);
+  const loading = false;
+  const entries = [{
+    id: "",
+    avatarUrl: "",
+    userName: "",
+    score: 2,
+  }]
+
 
   return (
     <div className="min-h-screen flex flex-col p-6 max-w-md mx-auto space-y-8 bg-[radial-gradient(circle_at_top_right,_rgba(157,80,255,0.1)_0%,_transparent_50%)]">
