@@ -32,7 +32,7 @@ export default function Home() {
             animate={{ scale: 1, opacity: 1 }}
             className="text-5xl font-headline font-bold text-white tracking-tighter"
           >
-            Pixingo<span className="text-primary">QUEST</span>
+            Pixingo
           </motion.h1>
           
           <motion.p
