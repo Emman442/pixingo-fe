@@ -48,13 +48,13 @@ export default function SoloPage() {
     }
   }, []);
 
-  if (!game) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <CircleLoader size={40} color="#BC17FD" />
-      </div>
-    );
-  }
+  // if (!game) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center">
+  //       <CircleLoader size={40} color="#BC17FD" />
+  //     </div>
+  //   );
+  // }
 
   const handleStartRun = () => {
     const shuffled = [...puzzles || []].sort(() => Math.random() - 0.5);
@@ -128,8 +128,10 @@ export default function SoloPage() {
     }, 1200);
   };
 
-  const progressValue =
-    ((currentRound + 1) / game.totalRounds) * 100;
+ const progressValue =
+  game
+    ? ((currentRound + 1) / game.totalRounds) * 100
+    : 0;
 
 
   const currentPuzzleId =
@@ -154,9 +156,6 @@ export default function SoloPage() {
     currentPuzzle?.image_3,
     currentPuzzle?.image_4,
   ].filter(Boolean) as string[];
-
-
-  console.log("Gamee: ", game)
 
   const handleSubmitGame = () => {
     if (answers.length !== game.totalRounds) {
