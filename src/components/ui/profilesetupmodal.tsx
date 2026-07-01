@@ -26,6 +26,7 @@ export default function ProfileSetupModal({
     const [isCreating, setIsCreating] = useState(false);
     const createProfileMutation = useCreateProfile();
     const { wallets } = useWallets();
+    const isUsernameValid = username.trim().length >= 5;
 
     const handleCreateProfile = async () => {
         if (!username) return;
@@ -82,7 +83,7 @@ export default function ProfileSetupModal({
                         />
                     </div>
 
-                    <Button onClick={handleCreateProfile} disabled={isCreating} className="w-full bg-primary hover:bg-primary/90">
+                    <Button onClick={handleCreateProfile} disabled={isCreating || !isUsernameValid} className="w-full bg-primary hover:bg-primary/90">
                         {isCreating ? "Creating Profile..." : "Create Profile"}
                     </Button>
 

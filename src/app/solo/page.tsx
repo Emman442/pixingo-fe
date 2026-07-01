@@ -23,7 +23,6 @@ export default function SoloPage() {
   const [timeLeft, setTimeLeft] = useState(30);
   const [answer, setAnswer] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // const [answers, setAnswers] = useState<string[]>([]);
   const { isPending: isFetchingPuzzles, data: puzzles } = useFetchPuzzles()
   const { isPending: isStartingGame, mutate: StartGame } = useStartSoloGame()
   const { isPending: isSubmittingGame, mutate: SubmitGame } = useSubmitSoloGame()
@@ -48,17 +47,9 @@ export default function SoloPage() {
     }
   }, []);
 
-  // if (!game) {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center">
-  //       <CircleLoader size={40} color="#BC17FD" />
-  //     </div>
-  //   );
-  // }
-
   const handleStartRun = () => {
     const shuffled = [...puzzles || []].sort(() => Math.random() - 0.5);
-    const selectedPuzzles = shuffled.slice(0, 4);
+    const selectedPuzzles = shuffled.slice(0, 3);
 
     const puzzleIds: any = selectedPuzzles.map(
       (p) => p.puzzle_id
